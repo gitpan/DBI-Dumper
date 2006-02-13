@@ -1,4 +1,5 @@
 package DBI::Dumper::C;
+# vi: ft=c
 
 use strict;
 use warnings;
@@ -68,108 +69,125 @@ void init(SV *self_ref) {
 
 
 SV *build(SV *self_ref, SV *row_ref) {
-	HV *self;
 	AV *row;
 	int row_len;
 	SV *data; /* return value */
 
+    #define BLOCK_SIZE 4096
+    char *buf;
+    char *buf_p;
+    I32 buf_size;
+
+    buf_size = BLOCK_SIZE;
+
 	I32 col_iter;
 
+    /* allocate new buffer for buf */
+    buf = malloc(BLOCK_SIZE * sizeof(char));
+    buf_p = buf;
+
 	/* dereference self and row */
-	self = (HV *)SvRV(self_ref);
 	row = (AV *)SvRV(row_ref);
 
-	/* create return value */
-	data = newSVpv("", 0);
-
 	row_len = av_len(row);
-
 	for(col_iter = 0; col_iter <= row_len; col_iter++) {
 		SV *col;
 		char *col_ptr;
 		STRLEN col_len;
 
-		/* fetch column data and string */
-		col = *av_fetch(row, col_iter, 0);
-		col_ptr = SvPV(col, col_len);
+        col = *av_fetch(row, col_iter, 0);
+
+        /* realloc as necessary */
+        while(buf_p - buf + terminator_len + left_delim_len + 
+            (SvOK(col) ? SvLEN(col) : 0) + right_delim_len + 1 > buf_size
+        ) {
+            buf_size += BLOCK_SIZE;
+            buf = realloc(buf, buf_size * sizeof(char));
+        }
 
 		/* append terminator to string if not first column */
 		if(col_iter > 0) {
-			sv_catpvn(data, terminator_ptr, terminator_len);
+            memcpy(buf_p, terminator_ptr, terminator_len * sizeof(char));
+            buf_p += terminator_len;
 		}
 
 		if(SvOK(left_delim)) {
-			sv_catsv(data, left_delim);
+            memcpy(buf_p, left_delim_ptr, left_delim_len * sizeof(char));
+            buf_p += left_delim_len;
 		}
-		
-		/* do escaping and append to data */
-		if(SvOK(escape)) {
-			int i;
-			for(i = 0; i < col_len; ) {
-				char *c = col_ptr + i;
-				int shift_len = 1;
-				int keep_going = 1;
 
-				/* escape embedded escapes */
-				if(
-					escape_len > 0 &&
-					strncmp(c, escape_ptr, escape_len) == 0
-				) {
-					sv_catsv(data, escape);
-					shift_len = escape_len;
-					keep_going = 0;
-				}
+        if(SvOK(col) && SvLEN(col) > 0) {
+            /* fetch column data and string */
+            col_ptr = SvPV(col, col_len);
 
-				/* escape embedded terminators */
-				if(
-					left_delim_len == 0 && /* don't have to escape */
-					right_delim_len == 0 && /* if I have enclosures */
-					keep_going &&
-					terminator_len > 0 &&
-					strncmp(c, terminator_ptr, terminator_len) == 0
-				) {
-					sv_catsv(data, escape);
-					shift_len = terminator_len;
-					keep_going = 0;
-				}
+            /* do escaping and append to data */
+            int i;
+            for(i = 0; i < col_len; ) {
+                char *c = col_ptr + i;
+                int shift_len = 1;
+                int do_escape = 0;
 
-				/* escape embedded enclosures */
-				if(
-					keep_going &&
-					left_delim_len > 0 && 
-					SvOK(left_delim) && 
-					strncmp(c, left_delim_ptr, left_delim_len) == 0
-				) {
-					sv_catsv(data, escape);
-					shift_len = left_delim_len;
-					keep_going = 0;
-				}
+                /* escape embedded escapes */
+                if(
+                    escape_len > 0 &&
+                    strncmp(c, escape_ptr, escape_len) == 0
+                ) {
+                    do_escape = 1;
+                    shift_len = escape_len;
+                }
 
-				if(
-					keep_going &&
-					right_delim_len > 0 && 
-					SvOK(right_delim) && 
-					strncmp(c, right_delim_ptr, right_delim_len) == 0
-				) {
-					sv_catsv(data, escape);
-					shift_len = right_delim_len;
-					keep_going = 0;
-				}
+                /* escape embedded terminators */
+                else if(
+                    left_delim_len == 0 && /* don't have to escape */
+                    right_delim_len == 0 && /* if I have enclosures */
+                    terminator_len > 0 &&
+                    strncmp(c, terminator_ptr, terminator_len) == 0
+                ) {
+                    do_escape = 1;
+                    shift_len = terminator_len;
+                }
 
-				sv_catpvn(data, c, shift_len);
-				i += shift_len;
-			}
-		}
-		else {
-			sv_catsv(data, col);
-		}
+                /* escape embedded enclosures */
+                else if(
+                    left_delim_len > 0 && 
+                    strncmp(c, left_delim_ptr, left_delim_len) == 0
+                ) {
+                    do_escape = 1;
+                    shift_len = left_delim_len;
+                }
+
+                else if(
+                    right_delim_len > 0 && 
+                    strncmp(c, right_delim_ptr, right_delim_len) == 0
+                ) {
+                    do_escape = 1;
+                    shift_len = right_delim_len;
+                }
+
+                /* escape as needed */
+                if(escape_len > 0 && do_escape) {
+                    memcpy(buf_p, escape_ptr, escape_len * sizeof(char));
+                    buf_p += escape_len;
+                }
+
+                /* copy our c pointer to the buf pointer */
+                memcpy(buf_p, c, shift_len * sizeof(char));
+                buf_p += shift_len;
+                i += shift_len;
+            } /* for(i = 0; i < col_len; ) */
+        } /* if(SvOK(col)) */
 
 		if(SvOK(right_delim)) {
-			sv_catsv(data, right_delim);
+            memcpy(buf_p, right_delim_ptr, right_delim_len * sizeof(char));
+            buf_p += right_delim_len;
 		}
 	}
-	sv_catpvn(data, "\n", 1);
 
+    memcpy(buf_p, "\n", sizeof(char));
+    buf_p += sizeof(char);
+
+	data = newSVpv(buf, buf_p - buf);
+    free(buf);
 	return data;
 }
 

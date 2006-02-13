@@ -20,60 +20,60 @@ my @tests = (
 		enclosed by 'c'
 		escaped by '0'
 		from select
-	} => qr{^ cac a c00c a c0cc $}mx,
+	} => qr{ cac a c00c a c0cc }mx,
 
 	q{
 		export data 
 		fields terminated by ','
 		escaped by 'c'
 		from select
-	} => qr{^ a , 0 , cc $}mx,
+	} => qr{ a , 0 , cc }mx,
 
 	q{
 		export data 
 		fields terminated by '0'
 		escaped by '\'
 		from select
-	} => qr{^ a 0 \\0 0 c $}mx,
+	} => qr{ a 0 \\0 0 c }mx,
 
 	q{
 		export data 
 		fields terminated by ','
 		enclosed by '"'
 		from select
-	} => qr{^ "a" , "0" , "c" $}mx,
+	} => qr{ "a" , "0" , "c" }mx,
 
 	q{
 		export data from
 		select col1, col2, col3 from data
 		where this = that
 		and that = this
-	} => qr{^ a \t 0 \t c $}mx,
+	} => qr{ a \t 0 \t c }mx,
 
 	q{
 		export data 
 		fields enclosed by '"' and '"'
 		from select
-	} => qr{^ "a" \t "0" \t "c" $}mx,
+	} => qr{ "a" \t "0" \t "c" }mx,
 
 	q{
 		export data
 		fields enclosed by '"'
 		from select
-	} => qr{^ "a" \t "0" \t "c" $}mx,
+	} => qr{ "a" \t "0" \t "c" }mx,
 
 	q{
 		export data
 		fields terminated by X'00'
 		from select
-	} => qr{^ a \0 0 \0 c $}mx,
+	} => qr{ a \0 0 \0 c }mx,
 
 	q{
 		export data
 		fields terminated by X'09'
 		enclosed by '"'
 		from select
-	} => qr{^ "a" \t "0" \t "c" $}mx,
+	} => qr{ "a" \t "0" \t "c" }mx,
 );
 
 
@@ -89,9 +89,6 @@ for my $i (0 .. $CAN_USE_INLINE) {
 	$DBI::Dumper::USE_INLINE_C = $i;
 
 	my @tests_copy = @tests;
-
-#	warn "INLINE: $DBI::Dumper::USE_INLINE_C";
-#	warn scalar(@tests_copy) . " tests remaining!";
 
 	while(@tests_copy) {
 		my($control_text, $test_regex) = (shift @tests_copy, shift @tests_copy);
@@ -115,25 +112,37 @@ for my $i (0 .. $CAN_USE_INLINE) {
 			die "Failed to execute for $control_text";
 		}
 
-		next unless ok(! -z $tfn);
+		next unless ok(-f $tfn);
 
 		local $/;
 		open my $tfh, "<", $tfn || die "Could not open file: $!";
 		my $data = <$tfh>;
 		close $tfn;
 
-		like($data => qr/$test_regex/m);
+		like($data => qr/$test_regex/);
 
-		ok( ( my @a = split("\n", $data) ) == 11 );
+		ok( ( my @a = split("\n", $data) ) == @{ $DummySTH::data } );
 	}
 }
 
 package DummySTH;
-my $count;
-sub new { $count = 0 ;return bless {}, shift };
+use Data::Dumper;
+
+my $index = 0;
+our $data;
+
+BEGIN { 
+	$data= [
+		[qw(a 0 c)],
+		[('b', undef, 'c')],
+	];
+}
+sub new { $index = 0 ;return bless {}, shift };
+
 sub fetchrow_arrayref {
-	return if $count++ > 10;
-	return [qw(a 0 c)];
+	my $row = $data->[$index++];
+	return unless $row && @$row;
+	return [ @$row ]; # make copy
 };
 
 0;

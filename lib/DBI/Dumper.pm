@@ -168,7 +168,7 @@ use Time::HiRes qw(time);
 use DBI::Dumper::Grammar;
 use DBI::Dumper::PurePerl;
 
-our $VERSION = '2.00a';
+our $VERSION = '2.00b';
 our $parser;
 our $USE_INLINE_C;
 
@@ -365,7 +365,7 @@ sub execute {
 		$job_line_num++;
 		$file_line_num++;
 
-		debug "$job_line_num rows written.\n" if !($job_line_num % 1000);
+#		debug "$job_line_num rows written.\n" if !($job_line_num % 1000);
 
 		# skip record if skip= provided (start_line_num => line to start at)
 		if($job_line_num <= $start_line_num) {

@@ -56,8 +56,9 @@ END_POSTAMBLE
 
 	if($USE_INLINE_C) {
 		$output .= << 'END_POSTAMBLE';
+all:: C.inl
 
-all::
+C.inl::
 	# precompile inline::c block
 	$(PERL) -Mblib -MInline=_INSTALL_ -MDBI::Dumper::C -e1 1.00 $(INST_ARCHLIB)
 END_POSTAMBLE
