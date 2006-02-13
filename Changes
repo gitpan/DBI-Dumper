@@ -1,5 +1,17 @@
 Revision history for Perl extension DBI::Dumper.
 
+2.00c Mon Feb 13 2005
+	- documentation fix
+
+2.00b Mon Feb 13 2005
+	- fixed bug with NULL columns
+	- profiled and improved Inline::C builder
+
+2.00a Fri Feb 10 2005
+	- added Inline::C string builder
+	- optimized PurePerl builder
+	- separated PRD grammar and added to build process
+
 1.41  Fri Feb 03 2005
 	- fixed bug with only having left delimiter
 	- fixed bug with zero ("0") as a false value

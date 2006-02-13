@@ -87,12 +87,12 @@ so if rows=n is set, this can be used to restart a job.
 =item writesize=n
 
 Block size to write file. Defaults to write each record as returned from
-database. If set, sqldump will collect rows into a buffer at most n bytes large
+database. If set, dbidumper will collect rows into a buffer at most n bytes large
 before writing to file.
 
 =item silent=true
 
-Suppress normal logging information. sqldump will only report errors.
+Suppress normal logging information. dbidumper will only report errors.
 
 =back
 

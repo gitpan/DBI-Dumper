@@ -40,7 +40,7 @@ DBI::Dumper - Dump data from a DBI datasource to file.
 
 =head1 DESCRIPTION
 
-Dumps data from a select statement into an output file. sqldumper tries to
+Dumps data from a select statement into an output file. dbidumper tries to
 mirror the functionality and behavior of sql*loader. The control file syntax is
 similar, and DBI::Dumper utilizes a subset of the sql*loader options.
 
@@ -91,12 +91,12 @@ so if rows=n is set, this can be used to restart a job.
 =item bindsize=n
 
 Block size to write file. Defaults to write each record as returned from
-database. If set, sqldump will collect rows into a buffer at most n bytes large
+database. If set, dbidumper will collect rows into a buffer at most n bytes large
 before writing to file.
 
 =item silent=true
 
-Suppress normal logging information. sqldump will only report errors.
+Suppress normal logging information. dbidumper will only report errors.
 
 =back
 
@@ -133,7 +133,7 @@ mirror near you:
 
 =head1 CONTROL FILE
 
-The control file used for sqldumper is very similar to sql*loader's. The full
+The control file used for dbidumper is very similar to sql*loader's. The full
 specification is:
 
 	[ OPTIONS ([option], ...) ]
@@ -168,7 +168,7 @@ use Time::HiRes qw(time);
 use DBI::Dumper::Grammar;
 use DBI::Dumper::PurePerl;
 
-our $VERSION = '2.00b';
+our $VERSION = '2.00c';
 our $parser;
 our $USE_INLINE_C;
 
