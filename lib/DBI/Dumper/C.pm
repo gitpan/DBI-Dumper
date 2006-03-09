@@ -87,8 +87,11 @@ SV *build(SV *self_ref, SV *row_ref) {
     buf_p = buf;
 
 	/* dereference self and row */
-	row = (AV *)SvRV(row_ref);
+	if(! SvOK(row_ref)) {
+		return Nullsv;
+	}
 
+	row = (AV *)SvRV(row_ref);
 	row_len = av_len(row);
 	for(col_iter = 0; col_iter <= row_len; col_iter++) {
 		SV *col;

@@ -1,5 +1,8 @@
 Revision history for Perl extension DBI::Dumper.
 
+2.01 Fri Feb 17 2005
+	- fixed bug with DBI's NAME statement handle attribute
+
 2.00c Mon Feb 13 2005
 	- documentation fix
 

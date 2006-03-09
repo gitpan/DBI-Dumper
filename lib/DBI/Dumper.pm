@@ -168,7 +168,7 @@ use Time::HiRes qw(time);
 use DBI::Dumper::Grammar;
 use DBI::Dumper::PurePerl;
 
-our $VERSION = '2.00c';
+our $VERSION = '2.01';
 our $parser;
 our $USE_INLINE_C;
 
@@ -333,7 +333,6 @@ sub execute {
 		DBI::Dumper::C::init($self);
 	}
 	else {
-		#debug "Please consider installing Inline::C for performance reasons.";
 		$build_row_string_sub = \&DBI::Dumper::PurePerl::build;
 		DBI::Dumper::PurePerl::init($self);
 	}
@@ -341,7 +340,10 @@ sub execute {
 	# build the escape regex ( will escape escape characters and embedded terminators )
 	my $header;
 	if($self->{header}) {
-		$header = $build_row_string_sub->($self, $sth->{NAME});
+		# $sth->{NAME} is dereferenced and rereferenced because
+		# the Inline::C module returns false for SvOK() from the value
+		# that DBI returns
+		$header = $build_row_string_sub->($self, [ @{ $sth->{NAME} } ]);
 	}
 
 	# open output file
@@ -365,7 +367,7 @@ sub execute {
 		$job_line_num++;
 		$file_line_num++;
 
-#		debug "$job_line_num rows written.\n" if !($job_line_num % 1000);
+		debug "$job_line_num rows written.\n" if !($job_line_num % 1000);
 
 		# skip record if skip= provided (start_line_num => line to start at)
 		if($job_line_num <= $start_line_num) {
@@ -374,8 +376,6 @@ sub execute {
 
 		# build data row
 		my $data = $build_row_string_sub->($self, $row);
-
-#		my $build_row_string_sub = \&_c_build_row_string;
 
 		# write directly if no bindsize specified
 		if(! $bindsize) {

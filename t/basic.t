@@ -74,6 +74,12 @@ my @tests = (
 		enclosed by '"'
 		from select
 	} => qr{ "a" \t "0" \t "c" }mx,
+
+	q{
+		export data
+		with header
+		from select
+	} => qr{ head1 \t head2 \t head3 }mx,
 );
 
 
@@ -121,7 +127,7 @@ for my $i (0 .. $CAN_USE_INLINE) {
 
 		like($data => qr/$test_regex/);
 
-		ok( ( my @a = split("\n", $data) ) == @{ $DummySTH::data } );
+		ok( ( my @a = split("\n", $data) ) == @{ $DummySTH::data } + ( $dumper->header ? 1 : 0 ) );
 	}
 }
 
@@ -137,7 +143,12 @@ BEGIN {
 		[('b', undef, 'c')],
 	];
 }
-sub new { $index = 0 ;return bless {}, shift };
+sub new { 
+	$index = 0 ;
+	return bless {
+		NAME => [ qw( head1 head2 head3 ) ],
+	}, shift 
+};
 
 sub fetchrow_arrayref {
 	my $row = $data->[$index++];

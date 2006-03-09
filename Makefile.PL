@@ -45,7 +45,7 @@ sub MY::postamble {
 all::
 	# recreate grammar
 	$(PERL) -MParse::RecDescent - grammar.prd DBI::Dumper::Grammar
-	$(MV) Grammar.pm lib/DBI/Dumper/Grammar.pm
+	$(MV) -f Grammar.pm lib/DBI/Dumper/Grammar.pm
 
 doc: lib/DBI/Dumper.pm
 	pod2text lib/DBI/Dumper.pm > README
